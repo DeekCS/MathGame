@@ -28,6 +28,8 @@ class Question {
             return function(num1, num2) { return num1 * num2 };
         }else if(Question.operator === "/") {
             return function(num1, num2) { return num1 / num2 };
+        }else if(Question.operator === "-") {
+            return function(num1, num2) { return num1 - num2 };
         }
     }
 
@@ -65,6 +67,7 @@ class Quiz {
         
         if(this.level === 1) {
             Question.operator = "+";
+            Question.operator = "-";
         }else if(this.level === 2) {
             Question.operator = "*";
         }else if(this.level === 3) {
