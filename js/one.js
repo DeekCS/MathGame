@@ -11,24 +11,40 @@ let sad = new Audio('sad.wav');
 let level = new Audio('level.wav');
 
 class Question {
+
+    static operator = "+";
+    
     constructor() {
         this.num1 = Math.floor(Math.random() * 11);
         this.num2 = Math.floor(Math.random() * 11);
-        this.correctAnswer = this.num1 + this.num2;
+        this._correctAnswer;
         this.render();
     }
 
+    operation() {
+        if(Question.operator === "+") {
+            return function(num1, num2) { return num1 + num2 };
+        }else if(Question.operator === "*") {
+            return function(num1, num2) { return num1 * num2 };
+        }else if(Question.operator === "/") {
+            return function(num1, num2) { return num1 / num2 };
+        }
+    }
+
     check(input) {
-        if (+input === this.correctAnswer) {
+        this._correctAnswer = this.operation()(this.num1, this.num2);
+        if (+input === this._correctAnswer) {
             audio.play();
             return true;
-        } 
+        }
+
         sad.play();
         return false;
     }
 
     render() {
         inputBox.value = '';
+        operator.innerHTML = Question.operator;
         v1.innerHTML = this.num1;
         v2.innerHTML = this.num2;
         v1.value = this.num1;
@@ -39,40 +55,76 @@ class Question {
 class Quiz {
     score = 0;
     questionCount = 0;
+    level = 1; // difficulty level
+
+    enterNextLevel() {
+        this.level++;
+
+        // restart from the beginning if reach the max level
+        if(this.level > 3) this.level = this.level % 3;
+        
+        if(this.level === 1) {
+            Question.operator = "+";
+        }else if(this.level === 2) {
+            Question.operator = "*";
+        }else if(this.level === 3) {
+            Question.operator = "/";
+        }
+    }
 
     end() {
-        this.renderEndStyles();
+        this.toggleDisplayResult(true);
+        
         if (this.score >= 5) {
+            // continue to the next level, or restart the game
 		    level.play();
 			finalResult.innerHTML = `you win and got ${this.score}/10`;
+            restart.innerHTML = this.level === 3 ? "Replay" : "Enter Next Level";
+            this.enterNextLevel();
 		} else {
+            // restart the current level
 			sad.play();
 			finalResult.innerHTML = `you lose and got ${this.score}/10`;
+            restart.innerHTML = "Restart";
 		}
+
+        restart.onclick = () => {
+            this.score = 0;
+            this.questionCount = 0;
+            this.toggleDisplayResult(false);
+            runGame();
+        };
     }
 
-    restart() {
-        window.location.reload();
-    }
-
-    renderEndStyles() {
-        v1.style.visibility = 'hidden';
-        v2.style.visibility = 'hidden';
-        inputBox.style.visibility = 'hidden';
-        submitBtn.style.visibility = 'hidden';
-        operator.style.visibility = 'hidden';
-        restart.style.visibility = 'visible';
+    toggleDisplayResult(on) {
+        if(on) {
+            v1.style.visibility = 'hidden';
+            v2.style.visibility = 'hidden';
+            inputBox.style.visibility = 'hidden';
+            submitBtn.style.visibility = 'hidden';
+            operator.style.visibility = 'hidden';
+            restart.style.visibility = 'visible';
+        }else {
+            v1.style.visibility = 'visible';
+            v2.style.visibility = 'visible';
+            inputBox.style.visibility = 'visible';
+            submitBtn.style.visibility = 'visible';
+            operator.style.visibility = 'visible';
+            restart.style.visibility = 'hidden';      
+            finalResult.innerHTML = "";     
+        }
     }
 }
 
-// main
-(() => {
+
+let quiz = new Quiz();
+
+function runGame() {
     let q = new Question();
-    let quiz = new Quiz();
 
     restart.style.visibility = 'hidden';
     
-    submitBtn.addEventListener('click', () => {
+    submitBtn.onclick = () => {
         if(quiz.questionCount === 5) {
             quiz.end();
             return;
@@ -81,13 +133,10 @@ class Quiz {
         if(q.check(inputBox.value)) {
             quiz.score += 2;
         }
-
+    
         q = new Question();
-        quiz.questionCount++;
-    });
+        quiz.questionCount++;   
+    };
+}
 
-    restart.addEventListener('click', () => {
-        quiz.restart();
-    });
-
-})();
+runGame();
